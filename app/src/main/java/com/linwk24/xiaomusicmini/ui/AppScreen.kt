@@ -84,6 +84,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.linwk24.xiaomusicmini.MainViewModel
 import com.linwk24.xiaomusicmini.UiState
 import com.linwk24.xiaomusicmini.data.DeviceDto
+import com.linwk24.xiaomusicmini.data.MODE_LABELS
 import com.linwk24.xiaomusicmini.data.OutputMode
 import com.linwk24.xiaomusicmini.data.SongDto
 
@@ -167,6 +168,7 @@ fun AppScreen(vm: MainViewModel) {
                 }
                 item { TransportRow(playing, vm) }
                 item { VolumeRow(ui, vm) }
+                item { ModeRow(ui, vm) }
                 item { DeviceRow(ui, vm) }
                 item { ListsRow(ui, vm) }
                 item { SearchRow(ui, vm) }
@@ -367,6 +369,30 @@ private fun VolumeRow(ui: UiState, vm: MainViewModel) {
             modifier = Modifier.weight(1f).padding(horizontal = 10.dp),
         )
         Text("${ui.volume}%", style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+@Composable
+private fun ModeRow(ui: UiState, vm: MainViewModel) {
+    val current = if (ui.output == OutputMode.PHONE) ui.phoneMode else ui.modeKey
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = "播放模式",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            MODE_LABELS.forEach { (key, label) ->
+                FilterChip(
+                    selected = key == current,
+                    onClick = { vm.setMode(key) },
+                    label = { Text(label) },
+                )
+            }
+        }
     }
 }
 

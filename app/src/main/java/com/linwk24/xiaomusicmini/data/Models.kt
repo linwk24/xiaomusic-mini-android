@@ -66,3 +66,12 @@ data class CmdResponse(
 )
 
 enum class OutputMode { PHONE, SPEAKER }
+
+
+val MODE_LABELS: Map<String, String> = linkedMapOf(
+    "all" to "全部循环",
+    "one" to "单曲循环",
+    "rnd" to "随机播放",
+    "seq" to "顺序播放",
+    "sin" to "单曲播放",
+)

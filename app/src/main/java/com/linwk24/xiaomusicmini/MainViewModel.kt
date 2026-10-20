@@ -14,6 +14,7 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.linwk24.xiaomusicmini.data.ApiException
 import com.linwk24.xiaomusicmini.data.DeviceDto
+import com.linwk24.xiaomusicmini.data.MODE_LABELS
 import com.linwk24.xiaomusicmini.data.OutputMode
 import com.linwk24.xiaomusicmini.data.SettingsRepository
 import com.linwk24.xiaomusicmini.data.SongDto
@@ -43,6 +44,8 @@ data class UiState(
     val speakerPlaying: Boolean = false,
     val curList: String? = null,
     val mode: String? = null,
+    val modeKey: String = "all",
+    val phoneMode: String = "all",
     val total: Int = 0,
     val volume: Int = 0,
     val lists: List<String> = listOf("全部"),
@@ -88,8 +91,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val url = settings.serverUrl.first()
             val mode = settings.outputMode.first()
+            val phoneMode = settings.phoneMode.first()
             api = XiaomiMiniApi(url)
-            _ui.update { it.copy(serverUrl = url, output = mode) }
+            _ui.update {
+                it.copy(
+                    serverUrl = url,
+                    output = mode,
+                    phoneMode = phoneMode,
+                    modeKey = if (mode == OutputMode.PHONE) phoneMode else "all",
+                    mode = if (mode == OutputMode.PHONE) MODE_LABELS[phoneMode] else null,
+                )
+            }
             connectController()
             refreshAll()
         }
@@ -109,7 +121,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 controller = future.get().also { c ->
                     c.addListener(playerListener)
-                    c.repeatMode = Player.REPEAT_MODE_ALL
+                    applyPhoneMode(_ui.value.phoneMode)
                 }
                 _ui.update { it.copy(phonePlaying = controller?.isPlaying == true) }
             } catch (e: Exception) {
@@ -184,7 +196,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 speakerTitle = status.curName,
                 speakerPlaying = status.playing,
                 curList = status.curList,
-                mode = status.mode,
+                mode = if (s.output == OutputMode.SPEAKER) (status.mode ?: s.mode) else s.mode,
+                modeKey = if (s.output == OutputMode.SPEAKER) (status.modeKey ?: s.modeKey) else s.modeKey,
                 total = status.total,
                 volume = status.volume ?: s.volume,
                 lists = if (status.lists.isNotEmpty()) status.lists else s.lists,
@@ -372,12 +385,65 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (mode == _ui.value.output) return
         viewModelScope.launch {
             settings.setOutputMode(mode)
-            _ui.update { it.copy(output = mode, error = null) }
-            if (mode == OutputMode.SPEAKER) {
+            if (mode == OutputMode.PHONE) {
+                val phoneMode = _ui.value.phoneMode
+                _ui.update {
+                    it.copy(
+                        output = mode,
+                        modeKey = phoneMode,
+                        mode = MODE_LABELS[phoneMode],
+                        error = null,
+                    )
+                }
+                applyPhoneMode(phoneMode)
+                runCatching { api.cmd("stop") }
+            } else {
+                _ui.update { it.copy(output = mode, error = null) }
                 controller?.stop()
                 _ui.update { it.copy(phonePlaying = false) }
+                refreshStatus()
+            }
+        }
+    }
+
+    fun setMode(key: String) {
+        val label = MODE_LABELS[key] ?: return
+        viewModelScope.launch {
+            if (_ui.value.output == OutputMode.PHONE) {
+                settings.setPhoneMode(key)
+                _ui.update { it.copy(phoneMode = key, modeKey = key, mode = label) }
+                applyPhoneMode(key)
             } else {
-                runCatching { api.cmd("stop") }
+                try {
+                    api.cmd("mode", key)
+                    _ui.update { it.copy(modeKey = key, mode = label) }
+                    refreshStatus()
+                } catch (e: Exception) {
+                    _ui.update { it.copy(error = friendly(e)) }
+                }
+            }
+        }
+    }
+
+    private fun applyPhoneMode(key: String) {
+        val player = controller ?: return
+        when (key) {
+            "one" -> {
+                player.repeatMode = Player.REPEAT_MODE_ONE
+                player.shuffleModeEnabled = false
+            }
+            "rnd" -> {
+                player.repeatMode = Player.REPEAT_MODE_ALL
+                player.shuffleModeEnabled = true
+            }
+            "all" -> {
+                player.repeatMode = Player.REPEAT_MODE_ALL
+                player.shuffleModeEnabled = false
+            }
+            else -> {
+                // seq / sin：手机端按顺序播完当前队列后停止
+                player.repeatMode = Player.REPEAT_MODE_OFF
+                player.shuffleModeEnabled = false
             }
         }
     }

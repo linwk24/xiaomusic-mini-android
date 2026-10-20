@@ -15,6 +15,7 @@ class SettingsRepository(private val context: Context) {
 
     private val serverKey = stringPreferencesKey("server_url")
     private val outputKey = stringPreferencesKey("output_mode")
+    private val phoneModeKey = stringPreferencesKey("phone_mode")
 
     val serverUrl: Flow<String> = context.settingsDataStore.data.map {
         it[serverKey] ?: DEFAULT_SERVER
@@ -29,8 +30,16 @@ class SettingsRepository(private val context: Context) {
         context.settingsDataStore.edit { it[serverKey] = url }
     }
 
+    val phoneMode: Flow<String> = context.settingsDataStore.data.map {
+        it[phoneModeKey] ?: "all"
+    }
+
     suspend fun setOutputMode(mode: OutputMode) {
         context.settingsDataStore.edit { it[outputKey] = mode.name }
+    }
+
+    suspend fun setPhoneMode(mode: String) {
+        context.settingsDataStore.edit { it[phoneModeKey] = mode }
     }
 
     companion object {
