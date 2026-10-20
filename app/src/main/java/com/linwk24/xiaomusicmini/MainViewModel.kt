@@ -223,7 +223,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     val player = controller ?: error("播放器未就绪，请稍后重试")
                     val songs = _ui.value.songs
                     if (songs.isEmpty()) error("当前歌单为空")
-                    val items = songs.map { s ->
+                    // 单曲播放：手机端只把当前曲放入队列，播完即停
+                    val queue = if (_ui.value.phoneMode == "sin") listOf(song) else songs
+                    val items = queue.map { s ->
                         MediaItem.Builder()
                             .setMediaId(s.name)
                             .setUri(api.absolute(s.url))
@@ -235,7 +237,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                             )
                             .build()
                     }
-                    val index = songs.indexOfFirst { it.name == song.name }.coerceAtLeast(0)
+                    val index = queue.indexOfFirst { it.name == song.name }.coerceAtLeast(0)
                     player.setMediaItems(items, index, 0L)
                     player.prepare()
                     player.play()

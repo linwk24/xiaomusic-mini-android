@@ -1,0 +1,25 @@
+{
+  "total_count": 1,
+  "artifacts": [
+    {
+      "id": 12277532107,
+      "node_id": "MDg6QXJ0aWZhY3QxMjI3NzUzMjEwNw==",
+      "name": "xiaomusic-mini-android-debug",
+      "size_in_bytes": 22898536,
+      "url": "https://api.github.com/repos/linwk24/xiaomusic-mini-android/actions/artifacts/12277532107",
+      "archive_download_url": "https://api.github.com/repos/linwk24/xiaomusic-mini-android/actions/artifacts/12277532107/zip",
+      "expired": false,
+      "digest": "sha256:47a9738a4bec896399147ccaf1cf5917701a08e56341a504bb3eefeef12e56c1",
+      "created_at": "2026-10-20T15:28:52Z",
+      "updated_at": "2026-10-20T15:28:52Z",
+      "expires_at": "2027-01-18T15:27:36Z",
+      "workflow_run": {
+        "id": 39448593002,
+        "repository_id": 1427146107,
+        "head_repository_id": 1427146107,
+        "head_branch": "main",
+        "head_sha": "25350a0bab69e4ffd77f861a14ae38e729d23b3a"
+      }
+    }
+  ]
+}
