@@ -219,7 +219,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             _ui.update { it.copy(busy = true, error = null) }
             try {
                 if (_ui.value.output == OutputMode.PHONE) {
-                    runCatching { api.cmd("stop") }
+                    stopSpeakerSilently()
                     val player = controller ?: error("播放器未就绪，请稍后重试")
                     val songs = _ui.value.songs
                     if (songs.isEmpty()) error("当前歌单为空")
@@ -398,7 +398,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 }
                 applyPhoneMode(phoneMode)
-                runCatching { api.cmd("stop") }
+                stopSpeakerSilently()
             } else {
                 _ui.update { it.copy(output = mode, error = null) }
                 controller?.stop()
@@ -424,6 +424,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     _ui.update { it.copy(error = friendly(e)) }
                 }
             }
+        }
+    }
+
+    private suspend fun stopSpeakerSilently() {
+        try {
+            api.cmd("stop_silent")
+        } catch (_: Exception) {
+            // 旧版后端没有 stop_silent；不要退化为 stop，否则会触发“收到，再见”TTS
         }
     }
 
